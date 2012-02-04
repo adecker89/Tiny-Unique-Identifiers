@@ -6,7 +6,7 @@ Created on Feb 3, 2012
 
 import random
 import unittest
-import shuid
+import tuid
 
 class TestSequenceFunctions(unittest.TestCase):
 
@@ -14,7 +14,7 @@ class TestSequenceFunctions(unittest.TestCase):
         self.seq = range(10)
 
     def test_normal(self):
-        str = shuid.shuid(324,4)
+        str = tuid.tuid(324,4)
         self.assertIsNotNone(str)       
 
 if __name__ == '__main__':
