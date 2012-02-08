@@ -1,23 +1,73 @@
 '''
-Created on Feb 3, 2012
-
-@author: alex
+@author: Alex Decker
 '''
 
-from numpy import matrix
-from random import random
+from numpy import matrix, zeros, linalg
+import random
 
 defaultAlphabet = "0123456789abcdefghijklmnopqrstuvwxyz"
-m = None #matrix([[0,2,3,1],[0,1,1,2],[2,2,1,0],[1,2,1,3]])
 
-def setSeed(seed):
+key = None
+alph = None
+idLength = None
+
+def tuid_init(seed, length, alphabet="0123456789abcdefghijklmnopqrstuvwxyz"):
+    global key,alph,idLength
     random.seed(seed)
+    alph = alphabet
+    idLength = length
+    key = None
     
-def setMatrix(size):
-    m = matrix(7)
-    for i in range(m.rows):
-        for j in range(m.cols):
-            m[i,j] = random.random()
+    
+def tuid(index):  
+    digits = convertBase(index, len(alph),idLength)
+    v = matrix(digits).transpose()
+    
+    if key is None: genKey(idLength)
+    r = key*v
+    ciphered = map(lambda x: x%len(alph),r.transpose().tolist()[0])
+    return toAlphabet(ciphered,alph)
+
+
+def genKey(size):
+    """Generates alph random square matrix of the given size
+
+    A valid key matrix must be invertible (determinant != 0,etc)
+    and the determinant cannot have any common factors with 
+    the length of the alph used. genKey guarantees these properties
+    in order to guarnatee uniqueness.
+    """
+    global key
+    key = matrix(zeros((size,size)))
+    (rows,cols) = key.shape
+    valid = False
+    while not valid:
+        
+        #generate matrix randomly
+        for i in range(rows):
+            for j in range(cols):
+                # range is arbitrary
+                key[i,j] = random.randint(0,10)
+                
+        valid = True
+        
+        #test if matrix is valid: see above
+        det = int(round(linalg.det(key)))        
+        if det == 0:
+            valid = False
+        
+        #testing for factors, usually called once so just using alph naive approach
+        for i in range(min(abs(det),len(alph)),1,-1):
+            if det % i == 0 and len(alph) % i == 0:
+                valid = False
+
+
+def toAlphabet(digits, alph):
+    s = ""
+    for i in digits:
+        s = s + alph[int(i)]
+    return s        
+
 
 def convertBase(num, base, length):
     try:
@@ -33,33 +83,3 @@ def convertBase(num, base, length):
         digits[i] = r
         num = num / base
     return digits
-
-def cipher(digits,base,length):
-    v = matrix(digits).transpose()
-    if not m: setMatrix(length)
-    r = m*v
-    return map(lambda x: x%base,r.transpose().tolist()[0])
-      
-def toAlphabet(digits, alphabet):
-    s = ""
-    for i in digits:
-        s = s + alphabet[i]
-    return s
-
-def tuid(index, length, **kwargs):
-    if kwargs.has_key("alphabet"): a = kwargs["alphabet"]
-    else: a = defaultAlphabet
-    
-    digits = convertBase(index, len(a),length)
-    digits = cipher(digits,len(a),length)
-    return toAlphabet(digits,a)
-
-def testCoverage():
-    d = set(['dfre','4sdr','rfdw'])
-    for i in range(0,pow(36,4)+10):
-        if i%32768==0: print i
-        s = tuid(i,4)
-        if s in d:
-            print i,s
-        else:
-            d.add(s)
